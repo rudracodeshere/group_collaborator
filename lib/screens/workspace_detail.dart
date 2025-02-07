@@ -6,6 +6,7 @@ import 'package:gca/screens/home.dart';
 import 'package:gca/screens/tasks_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:gca/screens/call_screen.dart'; // Import CallPage
+import 'package:firebase_storage/firebase_storage.dart'; // Import Firebase Storage
 
 class WorkspaceDetailScreen extends StatefulWidget {
   final String workspaceId;
@@ -170,6 +171,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
       for (final doc in tasks.docs) {
         batch.delete(doc.reference);
       }
+
+      // --- START: Delete Images from Storage ---
+      final storage = FirebaseStorage.instance;
+      final workspaceImageFolderRef = storage.ref().child('chat_images').child(widget.workspaceId);
+
+      try {
+        // List all items (files) within the workspace image folder
+        final ListResult listResult = await workspaceImageFolderRef.listAll();
+        final List<Reference> items = listResult.items;
+
+        // Delete each image file
+        await Future.wait(items.map((item) => item.delete())); // Delete all images in parallel
+
+        // Optionally, you can also try to delete the workspace folder itself (if it's empty after deleting files)
+        // Note: Deleting a folder might not be directly supported in Firebase Storage,
+        // and might become empty after deleting all files inside it.
+        // If you need to explicitly delete empty folders, you might need to use Firebase Admin SDK (server-side).
+        // For now, just deleting the files within the folder is sufficient.
+
+      } catch (storageError) {
+        debugPrint('Error deleting images from storage: $storageError');
+        // It's important to handle errors here, but consider if you want to block workspace deletion
+        // if image deletion fails. For now, we'll just print the error and continue deleting Firestore data.
+      }
+      // --- END: Delete Images from Storage ---
+
 
       await batch.commit();
 
