@@ -1,10 +1,12 @@
+// task_screen.dart
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:gca/screens/widget/add_task.dart';
 import 'package:gca/screens/widget/task_tile.dart';
 
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key, required this.workspaceId});
-  final workspaceId;
+  final String workspaceId;
   @override
   State<TaskScreen> createState() {
     return _TaskScreenState();
@@ -12,23 +14,24 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
-  List tasks = [1];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-     floatingActionButton: FloatingActionButton(
-  onPressed: () {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => Padding(
-        padding: EdgeInsets.only(top: 20,bottom: MediaQuery.of(context).viewInsets.bottom+5),
-        child: const AddTask(),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            builder: (context) => Padding(
+              padding: EdgeInsets.only(
+                  top: 20,
+                  bottom: MediaQuery.of(context).viewInsets.bottom + 5),
+              child: AddTask(workspaceId: widget.workspaceId),
+            ),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
-    );
-  },
-  child: const Icon(Icons.add),
-),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -38,22 +41,52 @@ class _TaskScreenState extends State<TaskScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  SizedBox(
-                 
-                    height: 30,
-                    width: 30,
-                    child: CircularProgressIndicator(
-                      value: 4 / 5,
-                      backgroundColor: Theme.of(context)
-                          .colorScheme
-                          .surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context)
-                              .colorScheme
-                              .primary),
-                    ),
-                  ),
-                  SizedBox(width: 15),
+                  StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('workspaces')
+                          .doc(widget.workspaceId)
+                          .collection('tasks')
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasData) {
+                          final tasks = snapshot.data!.docs;
+                          int completedTasks = 0;
+                          if (tasks.isNotEmpty) {
+                            completedTasks = tasks
+                                .where((task) => task['completed'] == true)
+                                .length;
+                          }
+                          double progress = tasks.isEmpty
+                              ? 0
+                              : completedTasks / tasks.length;
+
+                          return SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: CircularProgressIndicator(
+                              value: progress,
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary),
+                            ),
+                          );
+                        } else {
+                          return SizedBox(
+                            height: 30,
+                            width: 30,
+                            child: CircularProgressIndicator(
+                              backgroundColor: Theme.of(context)
+                                  .colorScheme
+                                  .surfaceContainerHighest,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                  Theme.of(context).colorScheme.primary),
+                            ),
+                          );
+                        }
+                      }),
+                  const SizedBox(width: 15),
                   Column(
                     children: [
                       Text(
@@ -61,73 +94,170 @@ class _TaskScreenState extends State<TaskScreen> {
                         style: TextStyle(
                             fontSize: 30, fontWeight: FontWeight.bold),
                       ),
-                      Text('4/5 Tasks Completed'),
+                      StreamBuilder<QuerySnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('workspaces')
+                              .doc(widget.workspaceId)
+                              .collection('tasks')
+                              .snapshots(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              final tasks = snapshot.data!.docs;
+                              int completedTasks = 0;
+                              if (tasks.isNotEmpty) {
+                                completedTasks = tasks
+                                    .where((task) => task['completed'] == true)
+                                    .length;
+                              }
+                              return Text('${completedTasks}/${tasks.length} Tasks Completed');
+                            } else {
+                              return const Text('0/0 Tasks Completed');
+                            }
+                          }),
                     ],
                   ),
                 ],
               ),
             ),
-            Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 32.0, vertical: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 32.0, vertical: 8),
               child: Divider(
-                color: Colors.white,
+                color: Colors.grey,
               ),
             ),
-            tasks.isNotEmpty
-                ? Expanded(
-                    child: ListView.builder(
-                      itemCount: tasks.length,
-                      itemBuilder: (context, index) {
-                        return Dismissible(
-                          direction: DismissDirection.horizontal,
-                          onDismissed: (direction) {
-                            setState(() {
-                              tasks.removeAt(index);
-                            });
-                          },
-                          background: Row(
+            StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('workspaces')
+                    .doc(widget.workspaceId)
+                    .collection('tasks')
+                    .orderBy('createdAt')
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    final tasks = snapshot.data!.docs;
+                    if (tasks.isNotEmpty) {
+                      return Expanded(
+                          child: ListView.builder(
+                        itemCount: tasks.length,
+                        itemBuilder: (context, index) {
+                          final taskData =
+                              tasks[index].data() as Map<String, dynamic>;
+                          final taskId = tasks[index].id;
+                          return Dismissible(
+                            direction: DismissDirection.horizontal,
+                            onDismissed: (direction) async {
+                              try {
+                                await FirebaseFirestore.instance
+                                    .collection('workspaces')
+                                    .doc(widget.workspaceId)
+                                    .collection('tasks')
+                                    .doc(taskId)
+                                    .delete();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                      content: Text('Task deleted!')),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content:
+                                          Text('Failed to delete task: $e')),
+                                );
+                              }
+                            },
+                            background: Container(
+                              color: Colors.redAccent,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              alignment: Alignment.centerLeft,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.delete,
+                                    color: Theme.of(context).colorScheme.onError,
+                                  ),
+                                  const SizedBox(width: 10),
+                                  Text('Delete',
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onError)),
+                                ],
+                              ),
+                            ),
+                            secondaryBackground: Container(
+                              color: Colors.redAccent,
+                              padding: const EdgeInsets.symmetric(horizontal: 20),
+                              alignment: Alignment.centerRight,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  Text('Delete',
+                                      style: TextStyle(
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onError)),
+                                  const SizedBox(width: 10),
+                                  Icon(
+                                    Icons.delete,
+                                    color: Theme.of(context).colorScheme.onError,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            key: Key(taskId),
+                            child: TaskTile(
+                              taskId: taskId,
+                              taskTitle: taskData['title'] ?? 'No Title',
+                              taskDescription:
+                                  taskData['description'] ?? 'No Description',
+                              taskDueDate: taskData['dueDate'] ?? 'No Due Date',
+                              taskCompleted: taskData['completed'] ?? false,
+                              workspaceId: widget.workspaceId,
+                            ),
+                          );
+                        },
+                      ));
+                    } else {
+                      return Expanded(
+                        child: Center(
+                          child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.delete,
-                                color: Theme.of(context).colorScheme.primary,
+                                Icons.task,
+                                size: 40,
+                                color: Theme.of(context).colorScheme.secondary,
                               ),
-                              SizedBox(width: 5),
-                              Text('Task Deleted'),
+                              const SizedBox(height: 10),
+                              Text(
+                                'No Tasks',
+                                style: TextStyle(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .secondary
+                                      .withOpacity(0.8),
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                             ],
                           ),
-                          key: Key(index.toString()),
-                          child: TaskTile(),
-                        );
-                      },
-                    ))
-                : Expanded(
-                    child: Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.task,
-                            size: 40,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            'No Tasks',
-                            style: TextStyle(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .secondary
-                                  .withOpacity(0.8),
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                        ),
+                      );
+                    }
+                  } else if (snapshot.hasError) {
+                    return Expanded(
+                      child: Center(
+                        child: Text('Error loading tasks: ${snapshot.error}'),
                       ),
-                    ),
-                  ),
+                    );
+                  } else {
+                    return const Expanded(
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+                }),
           ],
         ),
       ),
