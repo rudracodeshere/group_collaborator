@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_advanced_drawer/flutter_advanced_drawer.dart';
 import 'package:gca/screens/create_workspace.dart';
 import 'package:gca/screens/workspace_detail.dart';
 
@@ -81,19 +82,22 @@ class _HomeScreenState extends State<HomeScreen> {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(
-          content: Text(message, style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer)),
-          backgroundColor: Theme.of(context).colorScheme.errorContainer,
+        content: Text(message,
+            style: TextStyle(
+                color: Theme.of(context).colorScheme.onErrorContainer)),
+        backgroundColor: Theme.of(context).colorScheme.errorContainer,
       ));
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-
+    final _drawerController = AdvancedDrawerController();
     if (isLoading) {
       return Scaffold(
         backgroundColor: colorScheme.surfaceContainerLow,
-        body: Center(child: CircularProgressIndicator(color: colorScheme.primary)),
+        body: Center(
+            child: CircularProgressIndicator(color: colorScheme.primary)),
       );
     }
 
@@ -106,7 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Enter Username', style: TextStyle(color: colorScheme.onSurface, fontSize: 20)),
+                Text('Enter Username',
+                    style:
+                        TextStyle(color: colorScheme.onSurface, fontSize: 20)),
                 const SizedBox(height: 10),
                 TextField(
                   controller: _usernameController,
@@ -133,8 +139,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: colorScheme.primary,
                     foregroundColor: colorScheme.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 25, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 25, vertical: 12),
                   ),
                   onPressed: () => _setUsername(context),
                   child: const Text('Verify Username'),
@@ -146,63 +154,143 @@ class _HomeScreenState extends State<HomeScreen> {
       );
     }
 
-    return Scaffold(
-        backgroundColor: colorScheme.surfaceContainerLow,
-        appBar: AppBar(
-          backgroundColor: colorScheme.surfaceContainerHighest,
-          foregroundColor: colorScheme.onSurfaceVariant,
-          title: const Text('Home'),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.logout, color: colorScheme.onSurfaceVariant),
-              onPressed: () {
-                showDialog(context: context, builder: (_) => AlertDialog(
-                  title: const Text('Logout'),
-                  content: const Text('Are you sure you want to logout?'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        await FirebaseAuth.instance.signOut();
-                        Navigator.of(context).pop();
-                      },
-                      child: const Text('Logout'),
-                    ),
-                  ],
-                ));
-              },
-            ),
-          ],
-          elevation: 0,
-          centerTitle: true,
+    return AdvancedDrawer(
+      openScale: 0.85,
+      openRatio: 0.7,
+      backdropColor: colorScheme.surfaceContainerLow,
+      childDecoration: BoxDecoration(
+        boxShadow: [BoxShadow(
+          color: colorScheme.shadow,
+          blurRadius: 10,
+        
+        ),],
+        borderRadius: BorderRadius.circular(32),
+      ),
+      drawer: SafeArea(
+        child: Drawer(
+          //backgroundColor: Colors.transparent,
+          elevation: 10,
+          child: Column(
+            children: [
+              UserAccountsDrawerHeader(
+                decoration: BoxDecoration(color: Colors.transparent),
+                accountName: Text(username!),
+                accountEmail: Text(FirebaseAuth.instance.currentUser!.phoneNumber!),
+                currentAccountPicture: CircleAvatar(
+                  child: Text(username![0].toUpperCase(),
+                      style: TextStyle(fontSize: 40)),
+                ),
+              ),
+              ListTile(
+                leading: Icon(Icons.exit_to_app),
+                title: const Text('Log Out'),
+                onTap: () {
+                  showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                            title: const Text('Logout'),
+                            content:
+                                const Text('Are you sure you want to logout?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  await FirebaseAuth.instance.signOut();
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text('Logout'),
+                              ),
+                            ],
+                          ));
+                },
+              ),
+            ],
+          ),
         ),
-        body: Column(
-          children: [
-            Expanded(child: _buildWorkspaceList(context, colorScheme)),
-            Padding(
-              padding: const EdgeInsets.all(32.0),
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: colorScheme.primaryContainer,
-                  foregroundColor: colorScheme.onPrimaryContainer,
-                  minimumSize: const Size(double.infinity, 50),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                ),
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const CreateWorkspaceScreen(),
-                  ),
-                ),
-                child: Text('Create or Join Workspace', style: TextStyle(color: colorScheme.onPrimaryContainer)),
+      ),
+      controller: _drawerController,
+      child: Scaffold(
+          backgroundColor: colorScheme.surfaceContainerLow,
+          appBar: AppBar(
+            leading: IconButton(
+              onPressed: () {
+             _drawerController.toggleDrawer();
+              },
+              icon: ValueListenableBuilder(
+                valueListenable: _drawerController,
+                builder: (context, value, child) {
+                  return AnimatedSwitcher(
+                    duration: Duration(milliseconds: 250),
+                    child: Icon(
+                      value.visible ? Icons.clear : Icons.menu,
+                      key: ValueKey<bool>(value.visible),
+                    ),
+                  );
+                },
               ),
             ),
-          ],
-        ));
+            backgroundColor: colorScheme.surfaceContainerHighest,
+            foregroundColor: colorScheme.onSurfaceVariant,
+            title: const Text('Home'),
+            actions: [
+              IconButton(
+                icon: Icon(Icons.logout, color: colorScheme.onSurfaceVariant),
+                onPressed: () {
+                  showDialog(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                            title: const Text('Logout'),
+                            content:
+                                const Text('Are you sure you want to logout?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () async {
+                                  await FirebaseAuth.instance.signOut();
+                                  Navigator.of(context).pop();
+                                },
+                                child: const Text('Logout'),
+                              ),
+                            ],
+                          ));
+                },
+              ),
+            ],
+            elevation: 0,
+            centerTitle: true,
+          ),
+          body: Column(
+            children: [
+              Expanded(child: _buildWorkspaceList(context, colorScheme)),
+              Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: colorScheme.primaryContainer,
+                    foregroundColor: colorScheme.onPrimaryContainer,
+                    minimumSize: const Size(double.infinity, 50),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const CreateWorkspaceScreen(),
+                    ),
+                  ),
+                  child: Text('Create or Join Workspace',
+                      style: TextStyle(color: colorScheme.onPrimaryContainer)),
+                ),
+              ),
+            ],
+          )),
+    );
   }
 
   Widget _buildWorkspaceList(BuildContext context, ColorScheme colorScheme) {
@@ -215,16 +303,22 @@ class _HomeScreenState extends State<HomeScreen> {
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator(color: colorScheme.primary));
+          return Center(
+              child: CircularProgressIndicator(color: colorScheme.primary));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Hi $username', style: TextStyle(color: colorScheme.onSurface, fontSize: 22, fontWeight: FontWeight.bold)),
+                Text('Hi $username',
+                    style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold)),
                 const SizedBox(height: 20),
-                Text('No workspaces yet. Create one!', style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                Text('No workspaces yet. Create one!',
+                    style: TextStyle(color: colorScheme.onSurfaceVariant)),
               ],
             ),
           );
@@ -238,12 +332,19 @@ class _HomeScreenState extends State<HomeScreen> {
               color: colorScheme.surfaceContainer,
               elevation: 1,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                title: Text(workspace['name'], style: TextStyle(color: colorScheme.onSurface, fontWeight: FontWeight.bold)),
-                subtitle: Text(workspace['description'], style: TextStyle(color: colorScheme.onSurfaceVariant)),
-                trailing: Icon(Icons.chevron_right, color: colorScheme.onSurfaceVariant),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                title: Text(workspace['name'],
+                    style: TextStyle(
+                        color: colorScheme.onSurface,
+                        fontWeight: FontWeight.bold)),
+                subtitle: Text(workspace['description'],
+                    style: TextStyle(color: colorScheme.onSurfaceVariant)),
+                trailing: Icon(Icons.chevron_right,
+                    color: colorScheme.onSurfaceVariant),
                 onTap: () => Navigator.of(context).push(
                   MaterialPageRoute(
                     builder: (_) => WorkspaceDetailScreen(
