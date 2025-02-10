@@ -65,7 +65,7 @@ class _WorkspaceDetailScreenState extends State<WorkspaceDetailScreen> {
     if (_selectedIndex == 0) {
       return ChatScreen(workspaceId: widget.workspaceId);
     } else if (_selectedIndex == 1) {
-      return TasksScreen(workspaceId: widget.workspaceId);
+      return TaskScreen(workspaceId: widget.workspaceId);
     } else if (_selectedIndex == 2) {
       return CallPage(callID: widget.workspaceId); // Add CallPage here
     } else {

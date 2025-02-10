@@ -7,7 +7,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
-// --- Constants and Enums ---
 const String messagesCollection = 'messages';
 const String usersCollection = 'users';
 const String chatImagesFolder = 'chat_images';
@@ -19,7 +18,6 @@ const double defaultPadding = 8.0;
 
 enum ImageSourceType { camera, gallery }
 
-// --- Services ---
 class AuthService {
   FirebaseAuth get auth => FirebaseAuth.instance;
   User? get currentUser => auth.currentUser;
@@ -36,7 +34,7 @@ class UserService {
       return (userDoc.data()?['username'] as String?) ?? 'Anonymous';
     } catch (e) {
       debugPrint(
-          'Error fetching username: $e'); // Use debugPrint for non-critical errors
+          'Error fetching username: $e');
       return 'Anonymous';
     }
   }
@@ -53,14 +51,12 @@ class ChatService {
         .collection(messagesCollection)
         .where('workspaceId', isEqualTo: workspaceId)
         .orderBy('timestamp',
-            descending: false) // Ensure messages are in ascending order
+            descending: false)
         .snapshots();
   }
 
   Future<String> uploadImage(File imageFile, String workspaceId) async {
-    // Modified to accept workspaceId
     final imageName = 'chat_image_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    // Storage path now includes workspaceId
     final storageReference = storage
         .ref()
         .child(chatImagesFolder)
@@ -79,8 +75,8 @@ class ChatService {
     final user = authService.currentUser;
     if (user == null) {
       debugPrint(
-          'User not logged in, cannot send message.'); // Debug print for non-critical issues
-      return; // Early return if user is not logged in
+          'User not logged in, cannot send message.');
+      return;
     }
 
     final senderName = await userService.getUsername(user.phoneNumber);
@@ -94,12 +90,11 @@ class ChatService {
         'timestamp': FieldValue.serverTimestamp(),
         'isImage': isImage,
         'imageUrl':
-            imageUrl ?? '', // Ensure imageUrl is always provided, even if empty
+            imageUrl ?? '',
       });
     } catch (error) {
       debugPrint(
-          'Error sending message: $error'); // Debug print for non-critical issues
-      // Consider more robust error handling for production (e.g., retry mechanism, error reporting)
+          'Error sending message: $error');
     }
   }
 }
@@ -115,13 +110,12 @@ class ImagePickerService {
       return await _picker.pickImage(source: source);
     } catch (e) {
       debugPrint(
-          'Error picking image: $e'); // Debug print for non-critical issues
-      return null; // Handle error gracefully by returning null
+          'Error picking image: $e');
+      return null;
     }
   }
 }
 
-// --- Chat Message Widget ---
 class ChatMessage extends StatelessWidget {
   final Map<String, dynamic> message;
   final bool isMyMessage;
@@ -144,20 +138,23 @@ class ChatMessage extends StatelessWidget {
     return Align(
       alignment: alignment,
       child: Container(
+
         margin: const EdgeInsets.symmetric(
-            vertical: 4.0, horizontal: defaultPadding),
+        vertical: 4.0, horizontal: defaultPadding),
         padding: const EdgeInsets.all(messagePadding),
         decoration: BoxDecoration(
+
           color: backgroundColor,
           borderRadius: BorderRadius.circular(messageBorderRadius),
         ),
         child: Column(
+
           crossAxisAlignment: crossAxisAlignment,
           children: [
             Text(
               message['senderName'] ?? 'No Name',
               style: const TextStyle(fontWeight: FontWeight.bold),
-            ), //message['imageUrl']
+            ),
             if (message['isImage'] == true && message['imageUrl'] != null)
               CachedNetworkImage(
                 imageUrl: message['imageUrl'] as String,
@@ -165,9 +162,8 @@ class ChatMessage extends StatelessWidget {
                 placeholder: (context, url) => AspectRatio(
                   aspectRatio: 1,
                   child: Container(
-                    // Optional: Container for background color if needed
                     padding: const EdgeInsets.all(
-                        10.0), // Optional padding for indicator
+                        10.0),
                     child: const CircularProgressIndicator(),
                   ),
                 ),
@@ -175,8 +171,12 @@ class ChatMessage extends StatelessWidget {
                     const Text('Failed to load image'),
               ),
             if (message['isImage'] != true)
-              Text(message['text'] as String? ?? '',
-                  style: const TextStyle(fontSize: 16)),
+              Text(
+                message['text'] as String? ?? '',
+                style: const TextStyle(fontSize: 16),
+                softWrap: true,
+                overflow: TextOverflow.clip,
+              ),
           ],
         ),
       ),
@@ -184,7 +184,6 @@ class ChatMessage extends StatelessWidget {
   }
 }
 
-// --- Chat Screen ---
 class ChatScreen extends StatefulWidget {
   final String workspaceId;
 
@@ -199,7 +198,7 @@ class _ChatScreenState extends State<ChatScreen> {
   final ScrollController _scrollController = ScrollController();
   final ChatService _chatService = ChatService();
   final ImagePickerService _imagePickerService = ImagePickerService();
-  bool _isSendingImage = false; // State to track if image is sending
+  bool _isSendingImage = false;
 
   @override
   void dispose() {
@@ -227,21 +226,20 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _uploadImageAndSend(XFile pickedImageFile) async {
     setState(() {
-      _isSendingImage = true; // Start loading
+      _isSendingImage = true;
     });
     try {
       File imageFile = File(pickedImageFile.path);
       final imageUrl = await _chatService.uploadImage(
-          imageFile, widget.workspaceId); // Pass workspaceId here
+          imageFile, widget.workspaceId);
       await _chatService.sendMessage(
         workspaceId: widget.workspaceId,
         isImage: true,
         imageUrl: imageUrl,
-        text: '', // Text is empty for image messages
+        text: '',
       );
-      _scrollToBottom(); // Scroll to bottom after sending message
+      _scrollToBottom();
     } catch (error) {
-      // Consider showing a snackbar or alert dialog to inform the user about the error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
             content:
@@ -250,7 +248,7 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrint('Error uploading and sending image: $error');
     } finally {
       setState(() {
-        _isSendingImage = false; // End loading regardless of success or failure
+        _isSendingImage = false;
       });
     }
   }
@@ -294,7 +292,7 @@ class _ChatScreenState extends State<ChatScreen> {
         text: messageText,
       );
       _messageController.clear();
-      _scrollToBottom(); // Scroll to bottom after sending message
+      _scrollToBottom();
     }
   }
 
@@ -302,7 +300,6 @@ class _ChatScreenState extends State<ChatScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
-        // Use Stack to overlay loader
         children: [
           Padding(
             padding: const EdgeInsets.all(defaultPadding),
@@ -325,7 +322,7 @@ class _ChatScreenState extends State<ChatScreen> {
                       }
 
                       WidgetsBinding.instance.addPostFrameCallback((_) =>
-                          _scrollToBottom()); // Scroll to bottom on message load
+                          _scrollToBottom());
 
                       return ListView.builder(
                         controller: _scrollController,
@@ -335,7 +332,7 @@ class _ChatScreenState extends State<ChatScreen> {
                               as Map<String, dynamic>;
                           final userId = AuthService()
                               .currentUser
-                              ?.uid; // Get current user ID directly here for simplicity
+                              ?.uid;
                           final isMyMessage = message['senderId'] == userId;
 
                           return ChatMessage(
@@ -355,23 +352,23 @@ class _ChatScreenState extends State<ChatScreen> {
                           decoration:
                               const InputDecoration(hintText: 'Type a message'),
                           onSubmitted: (_) =>
-                              _sendTextMessage(), // Send message on Enter key
+                              _sendTextMessage(),
                           enabled:
-                              !_isSendingImage, // Disable input when sending image
+                              !_isSendingImage,
                         ),
                       ),
                       IconButton(
                         icon: const Icon(Icons.image),
                         onPressed: _isSendingImage
                             ? null
-                            : _pickAndSendImage, // Disable button when sending image
+                            : _pickAndSendImage,
                         tooltip: 'Send Image',
                       ),
                       IconButton(
                         icon: const Icon(Icons.send),
                         onPressed: _isSendingImage
                             ? null
-                            : _sendTextMessage, // Disable button when sending image
+                            : _sendTextMessage,
                         tooltip: 'Send Message',
                       ),
                     ],
@@ -382,12 +379,11 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           if (_isSendingImage)
             Positioned.fill(
-              // Overlay loader on top of everything
               child: Container(
                 color: Colors.black
-                    .withOpacity(0.5), // Semi-transparent background
+                    .withOpacity(0.5),
                 child: const Center(
-                  child: CircularProgressIndicator(), // Centered loader
+                  child: CircularProgressIndicator(),
                 ),
               ),
             ),
