@@ -59,4 +59,5 @@ class DefaultFirebaseOptions {
     projectId: 'group-collaboration-app',
     storageBucket: 'group-collaboration-app.firebasestorage.app',
   );
+
 }

@@ -13,12 +13,12 @@
 
 <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
-
-
+<!--for bring app to foreground from background in Android 10 -->
+<uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <application
         android:label="gca"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/launcher_icon">
         <activity
             android:name=".MainActivity"
             android:exported="true"

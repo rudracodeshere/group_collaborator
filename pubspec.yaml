@@ -39,20 +39,26 @@ dependencies:
   flutter_otp_text_field: ^1.4.0+2
   cloud_firestore: ^5.6.2
   uuid: ^4.4.0
-  zego_uikit_prebuilt_call: ^4.16.22
   image_picker: ^1.1.2
   firebase_storage: ^12.4.2
   cached_network_image: ^3.4.1
   flutter_advanced_drawer: ^1.4.0
+  zego_uikit_prebuilt_call: ^4.16.22
 
 dev_dependencies:
-  flutter_test:
-    sdk: flutter
-  flutter_launcher_icons: ^0.14.3
+  flutter_launcher_icons: "^0.14.3"
+  flutter_native_splash: ^2.4.4
+flutter_native_splash:
+  color: "#27271C"
+  android_12:
+    color: "#27271C"
+   
 flutter_launcher_icons:
   android: "launcher_icon"
-  ios: true
   image_path: "assets/logo.png"
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: "assets/logo.png"
+  # image_path: "assets/logo.png"
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your

@@ -1,8 +1,8 @@
 // task_screen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:gca/screens/widget/add_task.dart';
-import 'package:gca/screens/widget/task_tile.dart';
+import 'package:gca/widget/add_task.dart';
+import 'package:gca/widget/task_tile.dart';
 
 class TaskScreen extends StatefulWidget {
   const TaskScreen({super.key, required this.workspaceId});
