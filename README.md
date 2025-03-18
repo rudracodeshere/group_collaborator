@@ -7,8 +7,6 @@
 **Collaboration Suite**  
 Workspaces • Chat • Video Conferencing • Task Management • Cloud Storage
 
-## 🎥 Demo Video
-[![GCA Demo Video](https://img.youtube.com/vi/YOUTUBE_VIDEO_ID/0.jpg)](https://youtu.be/YOUTUBE_VIDEO_ID)
 
 ## 🌟 Key Features
 
