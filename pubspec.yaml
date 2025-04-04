@@ -43,7 +43,8 @@ dependencies:
   firebase_storage: ^12.4.2
   cached_network_image: ^3.4.1
   flutter_advanced_drawer: ^1.4.0
-  zego_uikit_prebuilt_call: ^4.16.22
+  agora_rtc_engine: ^6.2.0
+  permission_handler: ^11.0.0
 
 dev_dependencies:
   flutter_launcher_icons: "^0.14.3"
